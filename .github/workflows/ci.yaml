@@ -8,8 +8,8 @@ on:
 
 jobs:
     unittest:
-        runs-on: ubuntu-latest
-        name: ${{ matrix.py-version }} Unittest + Coverage
+        runs-on: ${{ matrix.os }}-latest
+        name: ${{ matrix.py-version }} Unittest + Coverage (${{ matrix.os }})
         strategy:
             fail-fast: false
             matrix:
@@ -18,11 +18,14 @@ jobs:
                 - "3.4"
                 - "3.5"
                 - "3.6"
-                - "3.7-dev"
-                - "nightly"
-                - "pypy"
+                - "3.7"
+                - "3.8"
+                - "pypy2"
                 - "pypy3"
-                - "pypy-5.3.1"
+                os:
+                - windows
+                - macOS
+                - ubuntu
         steps:
             - name: Checkout
               uses: actions/checkout@v1

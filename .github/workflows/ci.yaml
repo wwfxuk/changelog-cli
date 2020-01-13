@@ -50,12 +50,12 @@ jobs:
                   name: htmlcov
                   path: htmlcov
 
-            # See https://github.com/marketplace/actions/coveralls-github-action
-            - name: Coveralls
-              uses: coverallsapp/github-action@master
-              with:
-                  github-token: ${{ secrets.GITHUB_TOKEN }}
-                  path-to-lcov: ./.coverage
+            # # See https://github.com/marketplace/actions/coveralls-github-action
+            # - name: Coveralls
+            #   uses: coverallsapp/github-action@master
+            #   with:
+            #       github-token: ${{ secrets.GITHUB_TOKEN }}
+            #       path-to-lcov: ./.coverage
 
             # - name: Coveralls python
             #   if: failure()

@@ -104,22 +104,55 @@ class CliIntegrationTestCase(unittest.TestCase):
             self.assertEqual(result.output.strip(), 'Planning on releasing version 0.1.0. Proceed? [y/N]:')
 
     def test_cli_release_y(self):
-        with self.runner.isolated_filesystem():
-            self.runner.invoke(cli, ['init'])
-            self.runner.invoke(cli, ['new', 'Adding a new feature'])
-            result = self.runner.invoke(cli, ['release', '--yes'])
-            self.assertTrue(result)
-            suggest = self.runner.invoke(cli, ['current'])
-            self.assertEqual(suggest.output.strip(), '0.1.0')
+        invoke_args_kwargs = [
+            (['release', '--yes'], {}),
+            (['release'], {'input': 'y'}),
+        ]
+        for args, kwargs in invoke_args_kwargs:
+            with self.runner.isolated_filesystem():
+                self.runner.invoke(cli, ['init'])
+                self.runner.invoke(cli, ['new', 'Adding a new feature'])
+                result = self.runner.invoke(cli, args, **kwargs)
+                self.assertTrue(result)
+                suggest = self.runner.invoke(cli, ['current'])
+                self.assertEqual(suggest.output.strip(), '0.1.0')
 
-    def test_cli_release_missing(self):
+    def test_cli_missing_changelog_md(self):
+        action_args = [
+            ['new', 'oh hi mark'],
+            ['change', 'oh hi mark'],
+            ['fix', 'oh hi mark'],
+            ['breaks', 'oh hi mark'],
+            ['release'],
+            ['view'],
+        ]
+        expected = 'No CHANGELOG.md Found, do you want to create one? [y/N]:'
         with self.runner.isolated_filesystem():
-            result = self.runner.invoke(cli, ['release'])
-            self.assertEqual(result.output.strip(), 'No CHANGELOG.md Found, do you want to create one? [y/N]:')
+            for args in action_args:
+                self.assertFalse(os.path.isfile('CHANGELOG.md'))
+                result = self.runner.invoke(cli, args)
+                self.assertEqual(result.output.strip(), expected)
+
+        # Check create changelog specifically for release and view
+        for action in ['release', 'view']:
+            with self.runner.isolated_filesystem():
+                self.assertFalse(os.path.isfile('CHANGELOG.md'))
+                result = self.runner.invoke(cli, [action], input='y')
+                self.assertTrue(result.output.strip(), expected + ' y')
+                self.assertTrue(os.path.isfile('CHANGELOG.md'))
 
     def test_cli_view(self):
         with self.runner.isolated_filesystem():
             self.runner.invoke(cli, ['init'])
-            self.runner.invoke(cli, ['new', 'Adding a new feature'])
             result = self.runner.invoke(cli, ['view'])
             self.assertTrue(result)
+
+            # Test viewing during and after releasing 1st and 2nd release
+            for action in ['new', 'fix']:
+                self.runner.invoke(cli, [action, 'Some message'])
+                result = self.runner.invoke(cli, ['view'])
+                self.assertTrue(result)
+
+                self.runner.invoke(cli, ['release', '--yes'])
+                result = self.runner.invoke(cli, ['view'])
+                self.assertTrue(result)

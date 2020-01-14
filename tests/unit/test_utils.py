@@ -7,6 +7,8 @@ try:
 except ImportError:
     from mock import patch
 
+from packaging.version import Version
+
 from changelog.utils import ChangelogUtils
 from changelog.exceptions import ChangelogDoesNotExistError
 
@@ -109,14 +111,14 @@ class UtilsTestCase(unittest.TestCase):
         with patch.object(ChangelogUtils, 'get_changelog_data', return_value=sample_data) as mock_read:
             CL = ChangelogUtils()
             result = CL.get_current_version()
-        self.assertEqual(result, '0.3.2')
+        self.assertEqual(result, Version('0.3.2'))
 
     def test_get_current_version_default(self):
         sample_data = []
         with patch.object(ChangelogUtils, 'get_changelog_data', return_value=sample_data) as mock_read:
             CL = ChangelogUtils()
             result = CL.get_current_version()
-        self.assertEqual(result, '0.0.0')
+        self.assertEqual(result, Version('0.0.0'))
 
     def test_get_changes(self):
         sample_data = [
@@ -142,25 +144,82 @@ class UtilsTestCase(unittest.TestCase):
         self.assertTrue('fix' in result)
 
     def test_get_new_release_version_patch(self):
-        with patch.object(ChangelogUtils, 'get_current_version', return_value='1.1.1'):
-            CL = ChangelogUtils()
-            self.assertEqual(CL.get_new_release_version('patch'), '1.1.2')
-
-    def test_get_new_release_version_minor(self):
-        with patch.object(ChangelogUtils, 'get_current_version', return_value='1.1.1'):
-            CL = ChangelogUtils()
-            self.assertEqual(CL.get_new_release_version('minor'), '1.2.0')
-
-    def test_get_new_release_version_major(self):
-        with patch.object(ChangelogUtils, 'get_current_version', return_value='1.1.1'):
-            CL = ChangelogUtils()
-            self.assertEqual(CL.get_new_release_version('major'), '2.0.0')
+        CL = ChangelogUtils()  # Store a copy of original before patching
+        test_data = {
+            Version('0.0.0+user.1.1.1'): [
+                ('major', '1.0.0'),
+                ('minor', '0.1.0'),
+                ('patch', '0.0.1'),
+            ],
+            Version('1.1.1'): [
+                ('patch', '1.1.2'),
+                ('minor', '1.2.0'),
+                ('major', '2.0.0'),
+            ]
+        }
+        for version, action_expected in test_data.items():
+            with patch.object(ChangelogUtils, 'get_current_version', return_value=version):
+                for action, expected in action_expected:
+                    self.assertEqual(CL.get_new_release_version(action), expected)
 
     def test_get_new_release_version_suggest(self):
-        with patch.object(ChangelogUtils, 'get_current_version', return_value='1.1.1'):
-            with patch.object(ChangelogUtils, 'get_release_suggestion', return_value='minor'):
-                CL = ChangelogUtils()
-                self.assertEqual(CL.get_new_release_version('suggest'), '1.2.0')
+        CL = ChangelogUtils()  # Store a copy of original before patching
+        test_data = {
+            Version('0.0.0+user.1.1.1'): [
+                ('patch', '0.0.0+user.1.1.2', {'local': 'user.'}),
+                ('minor', '0.0.0+user.1.2.0', {'local': 'user.'}),
+                ('major', '0.0.0+user.2.0.0', {'local': 'user.'}),
+            ],
+            Version('1.1.1'): [
+                ('patch', '1.1.2', {}),
+                ('minor', '1.2.0', {}),
+                ('major', '2.0.0', {}),
+            ]
+        }
+        for version, suggestion_expected_kwargs in test_data.items():
+            with patch.object(ChangelogUtils, 'get_current_version', return_value=version):
+                for suggestion, expected, kwargs in suggestion_expected_kwargs:
+                    with patch.object(ChangelogUtils, 'get_release_suggestion', return_value=suggestion):
+                        self.assertEqual(
+                            CL.get_new_release_version('suggest', **kwargs),
+                            expected,
+                        )
+
+    def test_get_new_local_release_version(self):
+        CL = ChangelogUtils()  # Store a copy of original before patching
+        test_data = {
+            # standard, typical, normal states
+            Version('0.0.0+user.1.1.1'): [
+                ('patch', '0.0.0+user.1.1.2'),
+                ('minor', '0.0.0+user.1.2.0'),
+                ('major', '0.0.0+user.2.0.0'),
+            ],
+            # no previous local label in version
+            Version('0.0.0'): [
+                ('major', '0.0.0+user.1.0.0'),
+                ('minor', '0.0.0+user.0.1.0'),
+                ('patch', '0.0.0+user.0.0.1'),
+            ],
+            # MIS-MATCHED previous local label in version
+            Version('0.0.0+git77afcfd34'): [
+                ('major', '0.0.0+user.1.0.0'),
+                ('minor', '0.0.0+user.0.1.0'),
+                ('patch', '0.0.0+user.0.0.1'),
+            ],
+            # MALFORMED previous local label in version
+            Version('0.0.0+user.FOOBAR'): [
+                ('major', '0.0.0+user.1.0.0'),
+                ('minor', '0.0.0+user.0.1.0'),
+                ('patch', '0.0.0+user.0.0.1'),
+            ],
+        }
+        for version, rtype_expected, in test_data.items():
+            with patch.object(ChangelogUtils, 'get_current_version', return_value=version):
+                for rtype, expected in rtype_expected:
+                    self.assertEqual(
+                        CL.get_new_release_version(rtype, local='user.'),
+                        expected
+                    )
 
 
 class ChangelogFileOperationTestCase(unittest.TestCase):
@@ -208,7 +267,7 @@ class ChangelogFileOperationTestCase(unittest.TestCase):
 
     def test_match_version_canonical(self):
         line = "## 0.2.1 - (2017-06-09)"
-        self.assertEqual(self.CL.match_version(line), '0.2.1')
+        self.assertEqual(self.CL.match_version(line), Version('0.2.1'))
 
     def test_match_version_miss(self):
         line = '### Changes'
@@ -216,11 +275,11 @@ class ChangelogFileOperationTestCase(unittest.TestCase):
 
     def test_match_version_basic(self):
         line = '## v4.1.3'
-        self.assertEqual(self.CL.match_version(line), '4.1.3')
+        self.assertEqual(self.CL.match_version(line), Version('4.1.3'))
 
     def test_match_keep_a_changelog(self):
         line = '## [4.1.3] - 2017-06-20'
-        self.assertEqual(self.CL.match_version(line), '4.1.3')
+        self.assertEqual(self.CL.match_version(line), Version('4.1.3'))
 
     def tearDown(self):
         try:

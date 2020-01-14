@@ -2,8 +2,17 @@ import os
 import re
 from datetime import date
 
-from changelog.templates import INIT, UNRELEASED, RELEASE_LINE, DEFAULT_VERSION, RELEASE_LINE_REGEXES
+from packaging.version import Version
+
 from changelog.exceptions import ChangelogDoesNotExistError
+from changelog.templates import (
+    DEFAULT_VERSION,
+    INIT,
+    RELEASE_LINE,
+    RELEASE_LINE_REGEXES,
+    UNRELEASED,
+    VERSION_REGEX,
+)
 
 
 class ChangelogUtils:
@@ -54,10 +63,10 @@ class ChangelogUtils:
         """Gets the Current Application Version Based on Changelog"""
         data = self.get_changelog_data()
         for line in data:
-            match = self.match_version(line)
-            if match:
-                return match
-        return DEFAULT_VERSION
+            version = self.match_version(line)
+            if version is not None:
+                return version
+        return Version(DEFAULT_VERSION)
 
     def get_changes(self):
         """Get the list of chances since the last release"""
@@ -92,18 +101,35 @@ class ChangelogUtils:
             return "minor"
         return "patch"
 
-    def get_new_release_version(self, release_type):
+    def get_new_release_version(self, release_type, local=None):
         """
         Returns the version of the new release
         """
-        current_version = self.get_current_version()
+        current = self.get_current_version()
         if release_type not in ['major', 'minor', 'patch']:
             release_type = self.get_release_suggestion()
-        return self.bump_version(current_version, release_type)
 
-    def cut_release(self, release_type="suggest"):
+        version = DEFAULT_VERSION if local else current.base_version
+        version_in_local = False
+
+        if local and current.local and local in current.local:
+            version_in_local = re.search(VERSION_REGEX, current.local)
+            if version_in_local:
+                version = version_in_local.group()
+
+        new_version = self.bump_version(version, release_type)
+        if local:
+            if version_in_local:
+                new_local = re.sub(VERSION_REGEX, new_version, current.local)
+            else:
+                new_local = local + new_version
+            new_version = '+'.join([current.base_version, new_local])
+
+        return new_version
+
+    def cut_release(self, release_type="suggest", local=None):
         """Cuts a release and updates changelog"""
-        new_version = self.get_new_release_version(release_type)
+        new_version = self.get_new_release_version(release_type, local=local)
         changes = self.get_changes()
         data = self.get_changelog_data()
         output = []
@@ -156,10 +182,10 @@ class ChangelogUtils:
 
     def match_version(self, line):
         """
-        Matches a line vs the list of version strings. Returns group or False
+        Matches a line vs the list of version strings.
+        Returns matched groups dictionary or None.
         """
         for regex in RELEASE_LINE_REGEXES:
             match = re.match(regex, line)
-            if match and match.group('v'):
-                return match.group('v')
-        return False
+            if match:
+                return Version(match.group('version'))

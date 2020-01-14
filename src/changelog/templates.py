@@ -25,8 +25,19 @@ DEFAULT_VERSION = "0.0.0"
 
 RELEASE_LINE = "## {0} - ({1})\n"
 
+DATE_REGEX = r'(?P<date>\d{4}-\d{2}-\d{2})'
+LOCAL_REGEX = r'(?P<local>\+[a-zA-Z0-9][a-zA-Z0-9\.]*[a-zA-Z0-9])'
+VERSION_REGEX = r'\d+\.\d+\.\d+'
+FULL_VERSION_REGEX = r'(?P<version>{version}{local}?)'.format(
+    version=VERSION_REGEX,
+    local=LOCAL_REGEX,
+)
+
 RELEASE_LINE_REGEXES = [
-    r"^##\s(?P<v>\d+\.\d+\.\d+)\s\-\s\(\d{4}-\d{2}-\d{2}\)$",
-    r"^##\sv?(?P<v>\d+\.\d+\.\d+)",
-    r"^##\s\[(?P<v>\d+\.\d+\.\d+)\]\s\-\s\d{4}-\d{2}-\d{2}$",
+    regex.format(full_version=FULL_VERSION_REGEX, date=DATE_REGEX)
+    for regex in [
+        r"^##\s{full_version}\s\-\s\({date}\)$",
+        r"^##\sv?{full_version}",
+        r"^##\s\[{full_version}\]\s\-\s{date}$",
+    ]
 ]

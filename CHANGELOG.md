@@ -17,6 +17,18 @@ This project adheres to [Semantic Versioning](http://semver.org/) and [Keep a Ch
 ### Breaks
 
 
+## 0.6.2+wwfx.0.1.0 - (2020-01-14)
+---
+
+### New
+* More granular and labelled regex in `template.py`
+* Added pep-0440 [local version identifier](https://www.python.org/dev/peps/pep-0440/#local-version-identifiers) `--local` option.
+* Added missing tests to achieve 100% coverage.
+
+### Changes
+* Refactored to use Version objects from packaging.
+
+
 ## 0.6.2+wwfx.0.0.1 - (2020-01-14)
 ---
 

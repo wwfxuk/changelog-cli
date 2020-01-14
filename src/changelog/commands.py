@@ -3,6 +3,11 @@ import click
 from changelog.utils import ChangelogUtils
 from changelog.exceptions import ChangelogDoesNotExistError
 
+LOCAL_OPTION = click.option(
+    '-l', '--local',
+    help="Prefix for local version label e.g. 'user.' for label '+user.1.0.0'."
+)
+
 
 def print_version(ctx, _, value):
     from changelog._version import __version__ as v
@@ -75,30 +80,32 @@ def breaks(message):
 
 
 @cli.command(help="cut a release and update the changelog accordingly")
+@LOCAL_OPTION
 @click.option('--patch', 'release_type', flag_value='patch')
 @click.option('--minor', 'release_type', flag_value='minor')
 @click.option('--major', 'release_type', flag_value='major')
 @click.option('--suggest', 'release_type', flag_value='suggest', default=True)
 @click.option('--yes', 'auto_confirm', is_flag=True)
-def release(release_type, auto_confirm):
+def release(release_type, auto_confirm, local=None):
     CL = ChangelogUtils()
     try:
-        new_version = CL.get_new_release_version(release_type)
+        new_version = CL.get_new_release_version(release_type, local=local)
         if auto_confirm:
-            CL.cut_release()
+            CL.cut_release(local=local)
         else:
             if click.confirm("Planning on releasing version {}. Proceed?".format(new_version)):
-                CL.cut_release(release_type)
+                CL.cut_release(release_type, local=local)
     except ChangelogDoesNotExistError:
         if click.confirm("No CHANGELOG.md Found, do you want to create one?"):
             CL.initialize_changelog_file()
 
 
 @cli.command(help="returns the suggested next version based on the current logged changes")
-def suggest():
+@LOCAL_OPTION
+def suggest(local=None):
     CL = ChangelogUtils()
     try:
-        new_version = CL.get_new_release_version('suggest')
+        new_version = CL.get_new_release_version('suggest', local=local)
         click.echo(new_version)
     except ChangelogDoesNotExistError:
         pass

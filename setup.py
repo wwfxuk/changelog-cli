@@ -34,7 +34,8 @@ setup(
     package_dir={'': 'src'},
     url='https://github.com/mc706/changelog-cli',
     install_requires=[
-        'click'
+        'click',
+        'packaging',
     ],
     extras_require={'dev': dev_requirements},
     entry_points={

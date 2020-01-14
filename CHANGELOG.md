@@ -17,6 +17,17 @@ This project adheres to [Semantic Versioning](http://semver.org/) and [Keep a Ch
 ### Breaks
 
 
+## 0.6.2+wwfx.0.0.1 - (2020-01-14)
+---
+
+### Changes
+* Disabled coveralls in CI.
+* Replaced travis CI with GitHub Actions
+
+### Fixes
+* Removed inactive landscape.io and waffle.io badges
+
+
 ## 0.6.2 - (2017-10-27)
 ---
 

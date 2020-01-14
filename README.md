@@ -1,12 +1,8 @@
 # Changelog CLI
 
 [![PyPI version](https://badge.fury.io/py/changelog-cli.svg)](https://badge.fury.io/py/changelog-cli)
-[![Build Status](https://travis-ci.org/mc706/changelog-cli.svg?branch=master)](https://travis-ci.org/mc706/changelog-cli)
-[![Code Health](https://landscape.io/github/mc706/changelog-cli/master/landscape.svg?style=flat)](https://landscape.io/github/mc706/changelog-cli/master)
-[![Coverage Status](https://coveralls.io/repos/github/mc706/changelog-cli/badge.svg?branch=master)](https://coveralls.io/github/mc706/changelog-cli?branch=master)
+[![CI on master Workflow Badge](https://github.com/wwfxuk/changelog-cli/workflows/CI/badge.svg?branch=master)](https://github.com/wwfxuk/changelog-cli/actions?query=workflow%3ACI+branch%3Amaster)
 [![PyPI](https://img.shields.io/pypi/pyversions/changelog-cli.svg)](https://pypi.org/project/changelog-cli/)
-[![Stories in Ready](https://badge.waffle.io/mc706/changelog-cli.png?label=ready&title=Ready)](https://waffle.io/mc706/changelog-cli?utm_source=badge)
-
 
 A command line interface for managing your CHANGELOG.md files. Designed to make it easy to manage your repositories
 release history according to [Keep a Changelog](http://keepachangelog.com/).
@@ -20,7 +16,7 @@ pip install changelog-cli
 
 
 ## How To
-To keep an accurate changelog, whenenever you commit a change that affects how end users use
+To keep an accurate changelog, whenever you commit a change that affects how end users use
 your project, use this command line tool to add a line to the changelog. 
 
 If you added a new feature, use something like `changelog new "added feature x"`. This will add a
